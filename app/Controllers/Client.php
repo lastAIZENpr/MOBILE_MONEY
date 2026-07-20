@@ -112,18 +112,40 @@ class Client extends BaseController
             ->first();
         
         $frais = $bareme ? $bareme['frais'] : 0;
-        $montantTotal = $montant + $frais;
+        
+        // Utiliser le crédit de frais de retrait en priorité
+        $creditUtilise = 0;
+        $fraisAPrelever = $frais;
+        
+        if ($compte['credit_frais_retrait'] > 0) {
+            // Utiliser le crédit pour couvrir les frais
+            if ($compte['credit_frais_retrait'] >= $frais) {
+                // Le crédit couvre totalement les frais
+                $creditUtilise = $frais;
+                $fraisAPrelever = 0;
+            } else {
+                // Le crédit couvre partiellement les frais
+                $creditUtilise = $compte['credit_frais_retrait'];
+                $fraisAPrelever = $frais - $creditUtilise;
+            }
+        }
+        
+        $montantTotal = $montant + $fraisAPrelever;
         
         // Vérifier si le solde est suffisant
         if ($compte['solde'] < $montantTotal) {
             return redirect()->back()->with('error', 'Solde insuffisant. Solde actuel : ' . number_format($compte['solde'], 0, ',', ' ') . ' Ar, Montant requis : ' . number_format($montantTotal, 0, ',', ' ') . ' Ar');
         }
         
-        // Calculer le nouveau solde
+        // Calculer le nouveau solde et le nouveau crédit
         $nouveauSolde = $compte['solde'] - $montantTotal;
+        $nouveauCreditFraisRetrait = $compte['credit_frais_retrait'] - $creditUtilise;
         
-        // Mettre à jour le solde du compte
-        $compteModel->update($clientId, ['solde' => $nouveauSolde]);
+        // Mettre à jour le solde et le crédit du compte
+        $compteModel->update($clientId, [
+            'solde' => $nouveauSolde,
+            'credit_frais_retrait' => $nouveauCreditFraisRetrait
+        ]);
         
         // Créer la transaction
         $transactionModel->insert([
@@ -138,7 +160,13 @@ class Client extends BaseController
         // Mettre à jour la session
         session()->set('solde', $nouveauSolde);
         
-        return redirect()->to('/client')->with('success', 'Retrait de ' . number_format($montant, 0, ',', ' ') . ' Ar effectué avec succès (frais : ' . number_format($frais, 0, ',', ' ') . ' Ar)');
+        $message = 'Retrait de ' . number_format($montant, 0, ',', ' ') . ' Ar effectué avec succès (frais : ' . number_format($frais, 0, ',', ' ') . ' Ar';
+        if ($creditUtilise > 0) {
+            $message .= ', dont ' . number_format($creditUtilise, 0, ',', ' ') . ' Ar couverts par votre crédit de frais)';
+        }
+        $message .= ')';
+        
+        return redirect()->to('/client')->with('success', $message);
     }
 
     public function transfert()
