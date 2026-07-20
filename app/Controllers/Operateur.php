@@ -7,6 +7,7 @@ use App\Models\TypeOperationModel;
 use App\Models\BaremeFraisModel;
 use App\Models\CompteClientModel;
 use App\Models\TransactionModel;
+use App\Models\OperateurExterneModel;
 
 class Operateur extends BaseController
 {
@@ -266,5 +267,81 @@ class Operateur extends BaseController
         }
         
         return view('operateur/comptes', ['comptes' => $comptes]);
+    }
+
+    // CRUD des opérateurs externes
+    public function operateurs()
+    {
+        $operateurModel = new OperateurExterneModel();
+        $operateurs = $operateurModel->findAll();
+        
+        return view('operateur/operateurs', ['operateurs' => $operateurs]);
+    }
+
+    public function operateurCreate()
+    {
+        return view('operateur/operateur_create');
+    }
+
+    public function operateurStore()
+    {
+        $operateurModel = new OperateurExterneModel();
+        
+        $nom = $this->request->getPost('nom');
+        $tauxCommission = $this->request->getPost('taux_commission');
+        
+        if (!$operateurModel->insert([
+            'nom' => $nom,
+            'taux_commission' => $tauxCommission
+        ])) {
+            return redirect()->back()->with('error', 'Erreur lors de la création de l\'opérateur: ' . implode(', ', $operateurModel->errors()));
+        }
+        
+        return redirect()->to('/operateur/operateurs')->with('success', 'Opérateur externe ajouté avec succès');
+    }
+
+    public function operateurEdit($id)
+    {
+        $operateurModel = new OperateurExterneModel();
+        $operateur = $operateurModel->find($id);
+        
+        if (!$operateur) {
+            return redirect()->to('/operateur/operateurs')->with('error', 'Opérateur non trouvé');
+        }
+        
+        return view('operateur/operateur_edit', ['operateur' => $operateur]);
+    }
+
+    public function operateurUpdate($id)
+    {
+        $operateurModel = new OperateurExterneModel();
+        
+        $nom = $this->request->getPost('nom');
+        $tauxCommission = $this->request->getPost('taux_commission');
+        
+        if (!$operateurModel->update($id, [
+            'nom' => $nom,
+            'taux_commission' => $tauxCommission
+        ])) {
+            return redirect()->back()->with('error', 'Erreur lors de la modification de l\'opérateur: ' . implode(', ', $operateurModel->errors()));
+        }
+        
+        return redirect()->to('/operateur/operateurs')->with('success', 'Opérateur externe modifié avec succès');
+    }
+
+    public function operateurDelete($id)
+    {
+        $operateurModel = new OperateurExterneModel();
+        $prefixModel = new PrefixModel();
+        
+        // Vérifier si des préfixes sont associés à cet opérateur
+        $prefixesAssocies = $prefixModel->where('operateur_externe_id', $id)->countAllResults();
+        if ($prefixesAssocies > 0) {
+            return redirect()->to('/operateur/operateurs')->with('error', 'Impossible de supprimer: des préfixes sont associés à cet opérateur');
+        }
+        
+        $operateurModel->delete($id);
+        
+        return redirect()->to('/operateur/operateurs')->with('success', 'Opérateur externe supprimé avec succès');
     }
 }
