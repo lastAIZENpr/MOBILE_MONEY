@@ -10,3 +10,6 @@ Squelette des formulaires client dépôt / retrait / transfert (champ montant, +
 Logique métier dépôt : mise à jour du solde du compte (solde + montant), création de la transaction (frais = 0), mise à jour de la session.
 Logique métier retrait : calcul des frais selon la grille, vérification solde suffisant (solde >= montant + frais), mise à jour du solde, création de la transaction, mise à jour de la session.
 Logique métier transfert : vérification destinataire existe, calcul des frais, vérification solde suffisant, mise à jour des soldes expéditeur et destinataire, création de la transaction avec compte_destination_id, mise à jour de la session.
+Écran client : historique des transactions (liste triée par date décroissante, avec type, montant, frais, solde après, et destinataire pour les transferts).
+Écran opérateur : liste des transactions (toutes les transactions du système, avec compte expéditeur, type, montant, frais, solde après, et destinataire).
+Écran opérateur : liste des comptes clients (tous les comptes avec numéro, solde, date de création, et nombre de transactions).

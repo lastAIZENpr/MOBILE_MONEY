@@ -221,4 +221,50 @@ class Operateur extends BaseController
         
         return view('operateur/situation', $data);
     }
+
+    // Liste des transactions
+    public function transactions()
+    {
+        $transactionModel = new TransactionModel();
+        $typeOperationModel = new TypeOperationModel();
+        $compteModel = new CompteClientModel();
+        
+        $transactions = $transactionModel->orderBy('date_transaction', 'DESC')->findAll();
+        
+        // Enrichir avec les types d'opération et comptes
+        foreach ($transactions as &$transaction) {
+            $typeOperation = $typeOperationModel->find($transaction['type_operation_id']);
+            $transaction['type_libelle'] = $typeOperation ? $typeOperation['libelle'] : 'Inconnu';
+            $transaction['type_code'] = $typeOperation ? $typeOperation['code'] : 'inconnu';
+            
+            $compte = $compteModel->find($transaction['compte_id']);
+            $transaction['compte_numero'] = $compte ? $compte['numero_telephone'] : 'Inconnu';
+            
+            if ($transaction['compte_destination_id']) {
+                $compteDestinataire = $compteModel->find($transaction['compte_destination_id']);
+                $transaction['destinataire'] = $compteDestinataire ? $compteDestinataire['numero_telephone'] : 'Inconnu';
+            } else {
+                $transaction['destinataire'] = null;
+            }
+        }
+        
+        return view('operateur/transactions', ['transactions' => $transactions]);
+    }
+
+    // Liste des comptes clients
+    public function comptes()
+    {
+        $compteModel = new CompteClientModel();
+        $transactionModel = new TransactionModel();
+        
+        $comptes = $compteModel->findAll();
+        
+        // Enrichir avec le nombre de transactions par compte
+        foreach ($comptes as &$compte) {
+            $nbTransactions = $transactionModel->where('compte_id', $compte['id'])->countAllResults();
+            $compte['nb_transactions'] = $nbTransactions;
+        }
+        
+        return view('operateur/comptes', ['comptes' => $comptes]);
+    }
 }
