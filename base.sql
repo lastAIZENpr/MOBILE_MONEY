@@ -1,11 +1,20 @@
 -- Base de données Mobile Money
 -- Tables et données de seed
 
+-- Table operateurs_externes
+CREATE TABLE IF NOT EXISTS operateurs_externes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nom TEXT NOT NULL,
+    taux_commission REAL NOT NULL
+);
+
 -- Table prefixes
 CREATE TABLE IF NOT EXISTS prefixes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     prefixe TEXT NOT NULL UNIQUE,
-    actif INTEGER NOT NULL DEFAULT 1
+    actif INTEGER NOT NULL DEFAULT 1,
+    operateur_externe_id INTEGER,
+    FOREIGN KEY (operateur_externe_id) REFERENCES operateurs_externes(id)
 );
 
 -- Table types_operation
@@ -50,9 +59,20 @@ CREATE TABLE IF NOT EXISTS transactions (
 
 -- Données de seed
 
--- Préfixes valides
-INSERT INTO prefixes (prefixe, actif) VALUES ('033', 1);
-INSERT INTO prefixes (prefixe, actif) VALUES ('037', 1);
+-- Opérateurs externes
+INSERT INTO operateurs_externes (nom, taux_commission) VALUES ('Orange Money', 2.5);
+INSERT INTO operateurs_externes (nom, taux_commission) VALUES ('MobiCash', 3.0);
+
+-- Préfixes valides (notre opérateur)
+INSERT INTO prefixes (prefixe, actif, operateur_externe_id) VALUES ('033', 1, NULL);
+INSERT INTO prefixes (prefixe, actif, operateur_externe_id) VALUES ('037', 1, NULL);
+
+-- Préfixes externes (Orange Money)
+INSERT INTO prefixes (prefixe, actif, operateur_externe_id) VALUES ('032', 1, 1);
+INSERT INTO prefixes (prefixe, actif, operateur_externe_id) VALUES ('031', 1, 1);
+
+-- Préfixes externes (MobiCash)
+INSERT INTO prefixes (prefixe, actif, operateur_externe_id) VALUES ('034', 1, 2);
 
 -- Types d'opérations
 INSERT INTO types_operation (code, libelle) VALUES ('depot', 'Dépôt');
