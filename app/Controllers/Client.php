@@ -3,6 +3,8 @@
 namespace App\Controllers;
 
 use App\Models\CompteClientModel;
+use App\Models\TypeOperationModel;
+use App\Models\TransactionModel;
 
 class Client extends BaseController
 {
@@ -36,13 +38,42 @@ class Client extends BaseController
     {
         $montant = $this->request->getPost('montant');
         
-        // Validation basique : montant > 0
+        // Validation : montant > 0
         if ($montant <= 0) {
             return redirect()->back()->with('error', 'Le montant doit être supérieur à 0');
         }
         
-        // TODO : Implémentation complète dans une tâche ultérieure
-        return redirect()->to('/client')->with('success', 'Dépôt effectué (squelette)');
+        $compteModel = new CompteClientModel();
+        $typeOperationModel = new TypeOperationModel();
+        $transactionModel = new TransactionModel();
+        
+        $clientId = session()->get('client_id');
+        $compte = $compteModel->find($clientId);
+        
+        // Récupérer le type d'opération "depot"
+        $typeDepot = $typeOperationModel->where('code', 'depot')->first();
+        
+        // Calculer le nouveau solde (dépôt = pas de frais)
+        $nouveauSolde = $compte['solde'] + $montant;
+        $frais = 0;
+        
+        // Mettre à jour le solde du compte
+        $compteModel->update($clientId, ['solde' => $nouveauSolde]);
+        
+        // Créer la transaction
+        $transactionModel->insert([
+            'compte_id' => $clientId,
+            'type_operation_id' => $typeDepot['id'],
+            'montant' => $montant,
+            'frais' => $frais,
+            'solde_apres' => $nouveauSolde,
+            'date_transaction' => date('Y-m-d H:i:s')
+        ]);
+        
+        // Mettre à jour la session
+        session()->set('solde', $nouveauSolde);
+        
+        return redirect()->to('/client')->with('success', 'Dépôt de ' . number_format($montant, 0, ',', ' ') . ' Ar effectué avec succès');
     }
 
     public function retrait()
