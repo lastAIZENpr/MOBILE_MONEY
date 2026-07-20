@@ -25,6 +25,13 @@
                         <input type="number" class="form-control" id="montant" name="montant" required min="1" step="1">
                         <div class="form-text">Entrez le montant à transférer</div>
                     </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="inclure_frais_retrait" name="inclure_frais_retrait">
+                        <label class="form-check-label" for="inclure_frais_retrait">
+                            Inclure les frais de retrait pour le destinataire
+                        </label>
+                        <div class="form-text">Le destinataire recevra un crédit pour couvrir ses frais de retrait</div>
+                    </div>
                     <div class="mb-3">
                         <a href="<?= base_url('client') ?>" class="btn btn-secondary">Annuler</a>
                         <button type="submit" class="btn btn-info">Valider</button>
