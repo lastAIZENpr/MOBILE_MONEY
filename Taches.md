@@ -7,3 +7,4 @@ Login automatique par numéro de téléphone : formulaire (1 champ numéro), con
 Écran opérateur : gestion des types d'opérations et de leurs barèmes de frais (CRUD des tranches : montant_min, montant_max, frais ; validation que les tranches ne se chevauchent pas).
 Squelette des formulaires client dépôt / retrait / transfert (champ montant, + champ numéro destinataire pour le transfert), validations basiques (montant > 0), sans le calcul de frais ni la mise à jour du solde.
 Écran opérateur : situation globale (total des soldes, total des frais collectés, nombre de comptes, nombre de transactions, liste des comptes avec leur solde).
+Logique métier dépôt : mise à jour du solde du compte (solde + montant), création de la transaction (frais = 0), mise à jour de la session.
