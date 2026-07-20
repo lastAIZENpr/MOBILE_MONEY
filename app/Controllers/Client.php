@@ -6,6 +6,8 @@ use App\Models\CompteClientModel;
 use App\Models\TypeOperationModel;
 use App\Models\TransactionModel;
 use App\Models\BaremeFraisModel;
+use App\Models\PrefixModel;
+use App\Models\OperateurExterneModel;
 
 class Client extends BaseController
 {
@@ -211,6 +213,8 @@ class Client extends BaseController
         $typeOperationModel = new TypeOperationModel();
         $transactionModel = new TransactionModel();
         $baremeFraisModel = new BaremeFraisModel();
+        $prefixModel = new PrefixModel();
+        $operateurExterneModel = new OperateurExterneModel();
         
         // Récupérer le type d'opération "transfert"
         $typeTransfert = $typeOperationModel->where('code', 'transfert')->first();
@@ -222,6 +226,19 @@ class Client extends BaseController
             ->first();
         
         $fraisTransfert = $bareme ? $bareme['frais'] : 0;
+        
+        // Vérifier si le destinataire appartient à un opérateur externe
+        $commission = 0;
+        $prefixeDestinataire = substr($numeroDestinataire, 0, 3);
+        $prefix = $prefixModel->where('prefixe', $prefixeDestinataire)->first();
+        
+        if ($prefix && $prefix['operateur_externe_id']) {
+            $operateurExterne = $operateurExterneModel->find($prefix['operateur_externe_id']);
+            if ($operateurExterne) {
+                // Calculer la commission (montant * taux/100)
+                $commission = round($montant * $operateurExterne['taux_commission'] / 100);
+            }
+        }
         
         // Calculer les frais de retrait si l'option est cochée
         $fraisRetrait = 0;
@@ -238,7 +255,7 @@ class Client extends BaseController
             $fraisRetrait = $baremeRetrait ? $baremeRetrait['frais'] : 0;
         }
         
-        $fraisTotal = $fraisTransfert + $fraisRetrait;
+        $fraisTotal = $fraisTransfert + $fraisRetrait + $commission;
         $montantTotal = $montant + $fraisTotal;
         
         // Vérifier si le solde de l'expéditeur est suffisant
@@ -274,7 +291,10 @@ class Client extends BaseController
         
         $message = 'Transfert de ' . number_format($montant, 0, ',', ' ') . ' Ar vers ' . $numeroDestinataire . ' effectué avec succès (frais : ' . number_format($fraisTotal, 0, ',', ' ') . ' Ar';
         if ($fraisRetrait > 0) {
-            $message .= ', dont ' . number_format($fraisRetrait, 0, ',', ' ') . ' Ar de frais de retrait prépayés pour le destinataire)';
+            $message .= ', dont ' . number_format($fraisRetrait, 0, ',', ' ') . ' Ar de frais de retrait prépayés pour le destinataire';
+        }
+        if ($commission > 0) {
+            $message .= ($fraisRetrait > 0 ? ', ' : ', dont ') . number_format($commission, 0, ',', ' ') . ' Ar de commission (transfert externe)';
         }
         $message .= ')';
         
