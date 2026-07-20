@@ -25,26 +25,16 @@ class Database extends Config
      * @var array<string, mixed>
      */
     public array $default = [
-        'DSN'          => '',
-        'hostname'     => 'localhost',
-        'username'     => '',
-        'password'     => '',
-        'database'     => '',
-        'DBDriver'     => 'MySQLi',
-        'DBPrefix'     => '',
-        'pConnect'     => false,
-        'DBDebug'      => true,
-        'charset'      => 'utf8mb4',
-        'DBCollat'     => 'utf8mb4_general_ci',
-        'swapPre'      => '',
-        'encrypt'      => false,
-        'compress'     => false,
-        'strictOn'     => false,
-        'failover'     => [],
-        'port'         => 3306,
-        'numberNative' => false,
-        'foundRows'    => false,
-        'dateFormat'   => [
+        'database'    => '',
+        'DBDriver'    => 'SQLite3',
+        'DBPrefix'    => '',
+        'DBDebug'     => true,
+        'swapPre'     => '',
+        'failover'    => [],
+        'foreignKeys' => true,
+        'busyTimeout' => 1000,
+        'synchronous' => null,
+        'dateFormat'  => [
             'date'     => 'Y-m-d',
             'datetime' => 'Y-m-d H:i:s',
             'time'     => 'H:i:s',
@@ -193,6 +183,8 @@ class Database extends Config
     public function __construct()
     {
         parent::__construct();
+
+        $this->default['database'] = WRITEPATH . 'database.sqlite';
 
         // Ensure that we always set the database group to 'tests' if
         // we are currently running an automated test suite, so that

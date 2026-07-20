@@ -1,15 +1,34 @@
-Init projet CodeIgniter4 (via composer), config SQLite dans .env (chemin writable/database.sqlite), .gitignore (vendor, .env, writable/cache, writable/session, writable/logs), vérifier que l'app démarre.
-Layout général : header (nom app + navigation), footer, intégration Bootstrap (CDN), organisation des vues (views/layouts, views/operateur, views/client).
-Création de base.sql : les 5 tables ci-dessus + insertion des données de seed (préfixes 033/037, les 3 types d'opération, la grille de frais complète).
-Login automatique par numéro de téléphone : formulaire (1 champ numéro), contrôleur qui vérifie le préfixe, crée le compte si besoin, ouvre la session, redirige vers le tableau de bord client. Message d'erreur clair si préfixe invalide.
-Écran opérateur : CRUD des préfixes (liste, ajout avec validation format 2-3 chiffres + unicité, activer/désactiver ou supprimer).
-Écran client : affichage du solde (numéro, solde formaté), avec liens vers dépôt / retrait / transfert / historique.
-Écran opérateur : gestion des types d'opérations et de leurs barèmes de frais (CRUD des tranches : montant_min, montant_max, frais ; validation que les tranches ne se chevauchent pas).
-Squelette des formulaires client dépôt / retrait / transfert (champ montant, + champ numéro destinataire pour le transfert), validations basiques (montant > 0), sans le calcul de frais ni la mise à jour du solde.
-Écran opérateur : situation globale (total des soldes, total des frais collectés, nombre de comptes, nombre de transactions, liste des comptes avec leur solde).
-Logique métier dépôt : mise à jour du solde du compte (solde + montant), création de la transaction (frais = 0), mise à jour de la session.
-Logique métier retrait : calcul des frais selon la grille, vérification solde suffisant (solde >= montant + frais), mise à jour du solde, création de la transaction, mise à jour de la session.
-Logique métier transfert : vérification destinataire existe, calcul des frais, vérification solde suffisant, mise à jour des soldes expéditeur et destinataire, création de la transaction avec compte_destination_id, mise à jour de la session.
-Écran client : historique des transactions (liste triée par date décroissante, avec type, montant, frais, solde après, et destinataire pour les transferts).
-Écran opérateur : liste des transactions (toutes les transactions du système, avec compte expéditeur, type, montant, frais, solde après, et destinataire).
-Écran opérateur : liste des comptes clients (tous les comptes avec numéro, solde, date de création, et nombre de transactions).
+## Version 1
+- Init projet CodeIgniter4 (via composer), config SQLite dans .env (chemin writable/database.sqlite), .gitignore (vendor, .env, writable/cache, writable/session, writable/logs), vérifier que l'app démarre.
+- Layout général : header (nom app + navigation), footer, intégration Bootstrap (CDN), organisation des vues (views/layouts, views/operateur, views/client).
+- Création de base.sql : les 5 tables ci-dessus + insertion des données de seed (préfixes 033/037, les 3 types d'opération, la grille de frais complète).
+- Login automatique par numéro de téléphone : formulaire (1 champ numéro), contrôleur qui vérifie le préfixe, crée le compte si besoin, ouvre la session, redirige vers le tableau de bord client. Message d'erreur clair si préfixe invalide.
+- Écran opérateur : CRUD des préfixes (liste, ajout avec validation format 2-3 chiffres + unicité, activer/désactiver ou supprimer).
+- Écran client : affichage du solde (numéro, solde formaté), avec liens vers dépôt / retrait / transfert / historique.
+- Écran opérateur : gestion des types d'opérations et de leurs barèmes de frais (CRUD des tranches : montant_min, montant_max, frais ; validation que les tranches ne se chevauchent pas).
+- Squelette des formulaires client dépôt / retrait / transfert (champ montant, + champ numéro destinataire pour le transfert), validations basiques (montant > 0), sans le calcul de frais ni la mise à jour du solde.
+- Écran opérateur : situation globale (total des soldes, total des frais collectés, nombre de comptes, nombre de transactions, liste des comptes avec leur solde).
+- Logique métier dépôt : mise à jour du solde du compte (solde + montant), création de la transaction (frais = 0), mise à jour de la session.
+- Logique métier retrait : calcul des frais selon la grille, vérification solde suffisant (solde >= montant + frais), mise à jour du solde, création de la transaction, mise à jour de la session.
+- Logique métier transfert : vérification destinataire existe, calcul des frais, vérification solde suffisant, mise à jour des soldes expéditeur et destinataire, création de la transaction avec compte_destination_id, mise à jour de la session.
+- Écran client : historique des transactions (liste triée par date décroissante, avec type, montant, frais, solde après, et destinataire pour les transferts).
+- Écran opérateur : liste des transactions (toutes les transactions du système, avec compte expéditeur, type, montant, frais, solde après, et destinataire).
+- Écran opérateur : liste des comptes clients (tous les comptes avec numéro, solde, date de création, et nombre de transactions).
+
+## Version 2
+- [ETU004166] Migration : création table operateurs_externes (id, nom, taux_commission), ajout colonne operateur_externe_id (FK nullable) sur prefixes. Mise à jour de base.sql.
+- [ETU004148] UI formulaire de transfert : ajout de la case à cocher "Inclure les frais de retrait".
+- [ETU004166] Écran opérateur : CRUD "Autres opérateurs" (créer/modifier/supprimer un opérateur externe : nom + taux de commission).
+- [ETU004148] Logique backend : quand la case "frais de retrait inclus" est cochée, calculer le frais de retrait correspondant au montant, le prélever en plus chez l'expéditeur, et créditer credit_frais_retrait sur le compte destinataire.
+- [ETU004166] Écran opérateur : gestion des préfixes externes (associer un préfixe, ex 032/031, à un opérateur externe existant).
+- [ETU004148] Modifier la logique du retrait : si credit_frais_retrait > 0 sur le compte, l'utiliser en priorité pour couvrir (totalement ou partiellement) le frais dû, sinon prélever normalement.
+- [ETU004166] Modifier/étendre la fonction de calcul des frais de transfert : si le préfixe du destinataire appartient à un opérateur externe, ajouter la commission (montant * taux/100) au frais du barème.
+- [ETU004148] UI + logique backend de l'envoi multiple : formulaire avec montant total + liste dynamique de numéros (ajouter/retirer), division du montant total par le nombre de numéros, exécution d'un transfert unitaire par numéro.
+- [ETU004166] Écran "Situation des gains" : séparer en 2 blocs — Gains via notre opérateur / Gains via autres opérateurs (commissions).
+- [ETU004148] Validations de l'envoi multiple : minimum 2 numéros, montant divisible, solde suffisant pour couvrir montant total + somme des frais/commissions individuels.
+- [ETU004166] Nouvel écran "Situation des montants à envoyer à chaque opérateur" (somme des montants principaux transférés par opérateur externe).
+- [ETU004148] Mise à jour de l'écran historique client : afficher clairement les transferts externes (avec commission), l'utilisation du crédit frais de retrait, et les envois multiples.
+- [ETU004166] Tests des calculs de commission (transferts internes vs externes) + vérification de non-régression sur les barèmes de frais V1.
+- [ETU004148] Tests des nouvelles fonctionnalités client : frais de retrait inclus (vérifier le crédit et son utilisation au retrait suivant) + envoi multiple (vérifier la division du montant et les frais appliqués à chaque envoi).
+- [ETU004166] Finalisation de base.sql (nouvelles tables/colonnes + données de test : au moins 1 opérateur externe avec 2 préfixes) + relecture générale côté opérateur.
+- [ETU004148] Tests bout en bout du parcours client complet V2 (transfert simple, transfert externe, frais retrait inclus, envoi multiple, historique) + corrections finales.
