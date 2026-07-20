@@ -1,0 +1,1 @@
+[Toi] Init projet CodeIgniter4 (via composer), config SQLite dans .env (chemin writable/database.sqlite), .gitignore (vendor, .env, writable/cache, writable/session, writable/logs), vérifier que l'app démarre.
