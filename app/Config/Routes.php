@@ -27,3 +27,4 @@ $routes->get('/operateur/type/delete/(:num)', 'Operateur::typeDelete/$1');
 $routes->get('/operateur/bareme/create/(:num)', 'Operateur::baremeCreate/$1');
 $routes->post('/operateur/bareme/store', 'Operateur::baremeStore');
 $routes->get('/operateur/bareme/delete/(:num)', 'Operateur::baremeDelete/$1');
+$routes->get('/operateur/situation', 'Operateur::situation');

@@ -5,6 +5,8 @@ namespace App\Controllers;
 use App\Models\PrefixModel;
 use App\Models\TypeOperationModel;
 use App\Models\BaremeFraisModel;
+use App\Models\CompteClientModel;
+use App\Models\TransactionModel;
 
 class Operateur extends BaseController
 {
@@ -181,5 +183,42 @@ class Operateur extends BaseController
         $baremeModel->delete($id);
         
         return redirect()->to('/operateur/types')->with('success', 'Barème supprimé avec succès');
+    }
+
+    // Situation globale
+    public function situation()
+    {
+        $compteModel = new CompteClientModel();
+        $transactionModel = new TransactionModel();
+        
+        // Total des soldes de tous les comptes
+        $totalSolde = 0;
+        $comptes = $compteModel->findAll();
+        foreach ($comptes as $compte) {
+            $totalSolde += $compte['solde'];
+        }
+        
+        // Total des frais collectés
+        $totalFrais = 0;
+        $transactions = $transactionModel->findAll();
+        foreach ($transactions as $transaction) {
+            $totalFrais += $transaction['frais'];
+        }
+        
+        // Nombre de comptes
+        $nbComptes = count($comptes);
+        
+        // Nombre de transactions
+        $nbTransactions = count($transactions);
+        
+        $data = [
+            'total_solde' => $totalSolde,
+            'total_frais' => $totalFrais,
+            'nb_comptes' => $nbComptes,
+            'nb_transactions' => $nbTransactions,
+            'comptes' => $comptes
+        ];
+        
+        return view('operateur/situation', $data);
     }
 }
