@@ -224,4 +224,38 @@ class Client extends BaseController
         
         return redirect()->to('/client')->with('success', 'Transfert de ' . number_format($montant, 0, ',', ' ') . ' Ar vers ' . $numeroDestinataire . ' effectué avec succès (frais : ' . number_format($frais, 0, ',', ' ') . ' Ar)');
     }
+
+    public function historique()
+    {
+        if (!session()->get('client_id')) {
+            return redirect()->to('/login');
+        }
+        
+        $transactionModel = new TransactionModel();
+        $typeOperationModel = new TypeOperationModel();
+        $compteModel = new CompteClientModel();
+        
+        $clientId = session()->get('client_id');
+        
+        // Récupérer les transactions du client
+        $transactions = $transactionModel->where('compte_id', $clientId)
+            ->orderBy('date_transaction', 'DESC')
+            ->findAll();
+        
+        // Enrichir avec les types d'opération et destinataires
+        foreach ($transactions as &$transaction) {
+            $typeOperation = $typeOperationModel->find($transaction['type_operation_id']);
+            $transaction['type_libelle'] = $typeOperation ? $typeOperation['libelle'] : 'Inconnu';
+            $transaction['type_code'] = $typeOperation ? $typeOperation['code'] : 'inconnu';
+            
+            if ($transaction['compte_destination_id']) {
+                $compteDestinataire = $compteModel->find($transaction['compte_destination_id']);
+                $transaction['destinataire'] = $compteDestinataire ? $compteDestinataire['numero_telephone'] : 'Inconnu';
+            } else {
+                $transaction['destinataire'] = null;
+            }
+        }
+        
+        return view('client/historique', ['transactions' => $transactions]);
+    }
 }
