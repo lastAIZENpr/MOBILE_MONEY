@@ -293,6 +293,48 @@ class Operateur extends BaseController
         return view('operateur/gains', $data);
     }
 
+    // Situation des montants à envoyer aux opérateurs externes
+    public function montantsOperateurs()
+    {
+        $transactionModel = new TransactionModel();
+        $typeOperationModel = new TypeOperationModel();
+        $compteModel = new CompteClientModel();
+        $prefixModel = new PrefixModel();
+        $operateurExterneModel = new OperateurExterneModel();
+        
+        $transactions = $transactionModel->where('type_operation_id', 3)->findAll(); // Transferts
+        
+        $montantsParOperateur = [];
+        
+        foreach ($transactions as $transaction) {
+            if ($transaction['compte_destination_id']) {
+                $compteDestinataire = $compteModel->find($transaction['compte_destination_id']);
+                if ($compteDestinataire) {
+                    $prefixeDestinataire = substr($compteDestinataire['numero_telephone'], 0, 3);
+                    $prefix = $prefixModel->where('prefixe', $prefixeDestinataire)->first();
+                    
+                    if ($prefix && $prefix['operateur_externe_id']) {
+                        $operateurExterne = $operateurExterneModel->find($prefix['operateur_externe_id']);
+                        if ($operateurExterne) {
+                            $nomOperateur = $operateurExterne['nom'];
+                            // Ajouter le montant principal (sans les frais)
+                            if (!isset($montantsParOperateur[$nomOperateur])) {
+                                $montantsParOperateur[$nomOperateur] = 0;
+                            }
+                            $montantsParOperateur[$nomOperateur] += $transaction['montant'];
+                        }
+                    }
+                }
+            }
+        }
+        
+        $data = [
+            'montants_par_operateur' => $montantsParOperateur
+        ];
+        
+        return view('operateur/montants_operateurs', $data);
+    }
+
     // Liste des transactions
     public function transactions()
     {
