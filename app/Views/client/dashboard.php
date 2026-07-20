@@ -11,7 +11,8 @@
                 <p>Bienvenue dans votre espace client.</p>
                 <div class="alert alert-info">
                     <h4>Solde actuel</h4>
-                    <h2>0 Ar</h2>
+                    <h2><?= number_format($solde, 0, ',', ' ') ?> Ar</h2>
+                    <p class="mb-0">Numéro : <?= $numero ?></p>
                 </div>
                 <div class="row">
                     <div class="col-md-3">
