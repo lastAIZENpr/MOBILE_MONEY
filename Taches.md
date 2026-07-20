@@ -4,3 +4,4 @@ Création de base.sql : les 5 tables ci-dessus + insertion des données de seed 
 Login automatique par numéro de téléphone : formulaire (1 champ numéro), contrôleur qui vérifie le préfixe, crée le compte si besoin, ouvre la session, redirige vers le tableau de bord client. Message d'erreur clair si préfixe invalide.
 Écran opérateur : CRUD des préfixes (liste, ajout avec validation format 2-3 chiffres + unicité, activer/désactiver ou supprimer).
 Écran client : affichage du solde (numéro, solde formaté), avec liens vers dépôt / retrait / transfert / historique.
+Écran opérateur : gestion des types d'opérations et de leurs barèmes de frais (CRUD des tranches : montant_min, montant_max, frais ; validation que les tranches ne se chevauchent pas).
