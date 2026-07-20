@@ -301,6 +301,133 @@ class Client extends BaseController
         return redirect()->to('/client')->with('success', $message);
     }
 
+    public function envoiMultiple()
+    {
+        if (!session()->get('client_id')) {
+            return redirect()->to('/login');
+        }
+        return view('client/envoi_multiple');
+    }
+
+    public function envoiMultipleStore()
+    {
+        $montantTotal = $this->request->getPost('montant_total');
+        $destinataires = $this->request->getPost('destinataires');
+        
+        // Validation : montant > 0
+        if ($montantTotal <= 0) {
+            return redirect()->back()->with('error', 'Le montant total doit être supérieur à 0');
+        }
+        
+        // Validation : minimum 2 destinataires
+        if (empty($destinataires) || count($destinataires) < 2) {
+            return redirect()->back()->with('error', 'Minimum 2 destinataires requis');
+        }
+        
+        // Validation : montant divisible par le nombre de destinataires
+        $nbDestinataires = count($destinataires);
+        if ($montantTotal % $nbDestinataires !== 0) {
+            return redirect()->back()->with('error', 'Le montant total doit être divisible par le nombre de destinataires');
+        }
+        
+        $montantParDestinataire = $montantTotal / $nbDestinataires;
+        
+        $compteModel = new CompteClientModel();
+        $typeOperationModel = new TypeOperationModel();
+        $transactionModel = new TransactionModel();
+        $baremeFraisModel = new BaremeFraisModel();
+        $prefixModel = new PrefixModel();
+        $operateurExterneModel = new OperateurExterneModel();
+        
+        $clientId = session()->get('client_id');
+        $compteExpediteur = $compteModel->find($clientId);
+        
+        // Récupérer le type d'opération "transfert"
+        $typeTransfert = $typeOperationModel->where('code', 'transfert')->first();
+        
+        // Calculer les frais de transfert selon la grille
+        $bareme = $baremeFraisModel->where('type_operation_id', $typeTransfert['id'])
+            ->where('montant_min <=', $montantParDestinataire)
+            ->where('montant_max >=', $montantParDestinataire)
+            ->first();
+        
+        $fraisTransfert = $bareme ? $bareme['frais'] : 0;
+        
+        // Calculer le total des frais et commissions pour tous les destinataires
+        $totalFrais = 0;
+        $destinatairesValides = [];
+        
+        foreach ($destinataires as $numeroDestinataire) {
+            // Validation : ne pas transférer à soi-même
+            if ($numeroDestinataire === $compteExpediteur['numero_telephone']) {
+                return redirect()->back()->with('error', 'Vous ne pouvez pas transférer à votre propre compte');
+            }
+            
+            // Vérifier que le destinataire existe
+            $compteDestinataire = $compteModel->where('numero_telephone', $numeroDestinataire)->first();
+            if (!$compteDestinataire) {
+                return redirect()->back()->with('error', 'Le destinataire ' . $numeroDestinataire . ' n\'a pas de compte Mobile Money');
+            }
+            
+            // Vérifier si le destinataire appartient à un opérateur externe
+            $commission = 0;
+            $prefixeDestinataire = substr($numeroDestinataire, 0, 3);
+            $prefix = $prefixModel->where('prefixe', $prefixeDestinataire)->first();
+            
+            if ($prefix && $prefix['operateur_externe_id']) {
+                $operateurExterne = $operateurExterneModel->find($prefix['operateur_externe_id']);
+                if ($operateurExterne) {
+                    $commission = round($montantParDestinataire * $operateurExterne['taux_commission'] / 100);
+                }
+            }
+            
+            $fraisTotal = $fraisTransfert + $commission;
+            $totalFrais += $fraisTotal;
+            
+            $destinatairesValides[] = [
+                'numero' => $numeroDestinataire,
+                'compte' => $compteDestinataire,
+                'frais' => $fraisTotal
+            ];
+        }
+        
+        $montantTotalAPrelever = $montantTotal + $totalFrais;
+        
+        // Vérifier si le solde de l'expéditeur est suffisant
+        if ($compteExpediteur['solde'] < $montantTotalAPrelever) {
+            return redirect()->back()->with('error', 'Solde insuffisant. Solde actuel : ' . number_format($compteExpediteur['solde'], 0, ',', ' ') . ' Ar, Montant requis : ' . number_format($montantTotalAPrelever, 0, ',', ' ') . ' Ar');
+        }
+        
+        // Exécuter les transferts
+        $nouveauSoldeExpediteur = $compteExpediteur['solde'] - $montantTotalAPrelever;
+        
+        foreach ($destinatairesValides as $dest) {
+            $nouveauSoldeDestinataire = $dest['compte']['solde'] + $montantParDestinataire;
+            
+            // Mettre à jour le solde du destinataire
+            $compteModel->update($dest['compte']['id'], ['solde' => $nouveauSoldeDestinataire]);
+            
+            // Créer la transaction
+            $transactionModel->insert([
+                'compte_id' => $clientId,
+                'type_operation_id' => $typeTransfert['id'],
+                'montant' => $montantParDestinataire,
+                'frais' => $dest['frais'],
+                'solde_apres' => $nouveauSoldeExpediteur,
+                'date_transaction' => date('Y-m-d H:i:s'),
+                'compte_destination_id' => $dest['compte']['id']
+            ]);
+        }
+        
+        // Mettre à jour le solde de l'expéditeur
+        $compteModel->update($clientId, ['solde' => $nouveauSoldeExpediteur]);
+        
+        // Mettre à jour la session
+        session()->set('solde', $nouveauSoldeExpediteur);
+        
+        return redirect()->to('/client')->with('success', 'Envoi multiple effectué avec succès : ' . $nbDestinataires . ' destinataires ont reçu ' . number_format($montantParDestinataire, 0, ',', ' ') . ' Ar chacun (frais totaux : ' . number_format($totalFrais, 0, ',', ' ') . ' Ar)');
+    }
+
     public function historique()
     {
         if (!session()->get('client_id')) {

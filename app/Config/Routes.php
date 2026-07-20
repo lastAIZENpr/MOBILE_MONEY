@@ -14,6 +14,8 @@ $routes->get('/client/retrait', 'Client::retrait');
 $routes->post('/client/retrait/store', 'Client::retraitStore');
 $routes->get('/client/transfert', 'Client::transfert');
 $routes->post('/client/transfert/store', 'Client::transfertStore');
+$routes->get('/client/envoi_multiple', 'Client::envoiMultiple');
+$routes->post('/client/envoi_multiple/store', 'Client::envoiMultipleStore');
 $routes->get('/client/historique', 'Client::historique');
 $routes->get('/operateur', 'Operateur::index');
 $routes->get('/operateur/prefixes', 'Operateur::prefixes');
