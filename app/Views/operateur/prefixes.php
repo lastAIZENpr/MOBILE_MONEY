@@ -26,6 +26,7 @@
                         <tr>
                             <th>ID</th>
                             <th>Préfixe</th>
+                            <th>Opérateur</th>
                             <th>Statut</th>
                             <th>Actions</th>
                         </tr>
@@ -35,6 +36,13 @@
                         <tr>
                             <td><?= $prefix['id'] ?></td>
                             <td><?= $prefix['prefixe'] ?></td>
+                            <td>
+                                <?php if ($prefix['operateur_externe_id']): ?>
+                                    <span class="badge bg-info"><?= $prefix['operateur_nom'] ?? 'Opérateur externe' ?></span>
+                                <?php else: ?>
+                                    <span class="badge bg-primary">Notre opérateur</span>
+                                <?php endif; ?>
+                            </td>
                             <td>
                                 <?php if ($prefix['actif']): ?>
                                     <span class="badge bg-success">Actif</span>

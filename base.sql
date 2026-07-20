@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS comptes_clients (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     numero_telephone TEXT NOT NULL UNIQUE,
     solde INTEGER NOT NULL DEFAULT 0,
+    credit_frais_retrait INTEGER NOT NULL DEFAULT 0,
     date_creation TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
