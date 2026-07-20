@@ -153,6 +153,7 @@ class Client extends BaseController
     {
         $montant = $this->request->getPost('montant');
         $numeroDestinataire = $this->request->getPost('numero_destinataire');
+        $inclureFraisRetrait = $this->request->getPost('inclure_frais_retrait');
         
         // Validation : montant > 0
         if ($montant <= 0) {
@@ -186,14 +187,31 @@ class Client extends BaseController
         // Récupérer le type d'opération "transfert"
         $typeTransfert = $typeOperationModel->where('code', 'transfert')->first();
         
-        // Calculer les frais selon la grille
+        // Calculer les frais de transfert selon la grille
         $bareme = $baremeFraisModel->where('type_operation_id', $typeTransfert['id'])
             ->where('montant_min <=', $montant)
             ->where('montant_max >=', $montant)
             ->first();
         
-        $frais = $bareme ? $bareme['frais'] : 0;
-        $montantTotal = $montant + $frais;
+        $fraisTransfert = $bareme ? $bareme['frais'] : 0;
+        
+        // Calculer les frais de retrait si l'option est cochée
+        $fraisRetrait = 0;
+        if ($inclureFraisRetrait) {
+            // Récupérer le type d'opération "retrait"
+            $typeRetrait = $typeOperationModel->where('code', 'retrait')->first();
+            
+            // Calculer les frais de retrait selon la grille
+            $baremeRetrait = $baremeFraisModel->where('type_operation_id', $typeRetrait['id'])
+                ->where('montant_min <=', $montant)
+                ->where('montant_max >=', $montant)
+                ->first();
+            
+            $fraisRetrait = $baremeRetrait ? $baremeRetrait['frais'] : 0;
+        }
+        
+        $fraisTotal = $fraisTransfert + $fraisRetrait;
+        $montantTotal = $montant + $fraisTotal;
         
         // Vérifier si le solde de l'expéditeur est suffisant
         if ($compteExpediteur['solde'] < $montantTotal) {
@@ -203,17 +221,21 @@ class Client extends BaseController
         // Calculer les nouveaux soldes
         $nouveauSoldeExpediteur = $compteExpediteur['solde'] - $montantTotal;
         $nouveauSoldeDestinataire = $compteDestinataire['solde'] + $montant;
+        $nouveauCreditFraisRetrait = $compteDestinataire['credit_frais_retrait'] + $fraisRetrait;
         
         // Mettre à jour les soldes des deux comptes
         $compteModel->update($clientId, ['solde' => $nouveauSoldeExpediteur]);
-        $compteModel->update($compteDestinataire['id'], ['solde' => $nouveauSoldeDestinataire]);
+        $compteModel->update($compteDestinataire['id'], [
+            'solde' => $nouveauSoldeDestinataire,
+            'credit_frais_retrait' => $nouveauCreditFraisRetrait
+        ]);
         
         // Créer la transaction pour l'expéditeur
         $transactionModel->insert([
             'compte_id' => $clientId,
             'type_operation_id' => $typeTransfert['id'],
             'montant' => $montant,
-            'frais' => $frais,
+            'frais' => $fraisTotal,
             'solde_apres' => $nouveauSoldeExpediteur,
             'date_transaction' => date('Y-m-d H:i:s'),
             'compte_destination_id' => $compteDestinataire['id']
@@ -222,7 +244,13 @@ class Client extends BaseController
         // Mettre à jour la session de l'expéditeur
         session()->set('solde', $nouveauSoldeExpediteur);
         
-        return redirect()->to('/client')->with('success', 'Transfert de ' . number_format($montant, 0, ',', ' ') . ' Ar vers ' . $numeroDestinataire . ' effectué avec succès (frais : ' . number_format($frais, 0, ',', ' ') . ' Ar)');
+        $message = 'Transfert de ' . number_format($montant, 0, ',', ' ') . ' Ar vers ' . $numeroDestinataire . ' effectué avec succès (frais : ' . number_format($fraisTotal, 0, ',', ' ') . ' Ar';
+        if ($fraisRetrait > 0) {
+            $message .= ', dont ' . number_format($fraisRetrait, 0, ',', ' ') . ' Ar de frais de retrait prépayés pour le destinataire)';
+        }
+        $message .= ')';
+        
+        return redirect()->to('/client')->with('success', $message);
     }
 
     public function historique()
