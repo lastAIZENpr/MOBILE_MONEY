@@ -32,6 +32,7 @@ $routes->post('/operateur/bareme/store', 'Operateur::baremeStore');
 $routes->get('/operateur/bareme/delete/(:num)', 'Operateur::baremeDelete/$1');
 $routes->get('/operateur/situation', 'Operateur::situation');
 $routes->get('/operateur/gains', 'Operateur::gains');
+$routes->get('/operateur/montants_operateurs', 'Operateur::montantsOperateurs');
 $routes->get('/operateur/transactions', 'Operateur::transactions');
 $routes->get('/operateur/comptes', 'Operateur::comptes');
 $routes->get('/operateur/operateurs', 'Operateur::operateurs');
