@@ -437,6 +437,8 @@ class Client extends BaseController
         $transactionModel = new TransactionModel();
         $typeOperationModel = new TypeOperationModel();
         $compteModel = new CompteClientModel();
+        $prefixModel = new PrefixModel();
+        $operateurExterneModel = new OperateurExterneModel();
         
         $clientId = session()->get('client_id');
         
@@ -454,11 +456,34 @@ class Client extends BaseController
             if ($transaction['compte_destination_id']) {
                 $compteDestinataire = $compteModel->find($transaction['compte_destination_id']);
                 $transaction['destinataire'] = $compteDestinataire ? $compteDestinataire['numero_telephone'] : 'Inconnu';
+                
+                // Vérifier si c'est un transfert externe
+                if ($compteDestinataire) {
+                    $prefixeDestinataire = substr($compteDestinataire['numero_telephone'], 0, 3);
+                    $prefix = $prefixModel->where('prefixe', $prefixeDestinataire)->first();
+                    
+                    if ($prefix && $prefix['operateur_externe_id']) {
+                        $operateurExterne = $operateurExterneModel->find($prefix['operateur_externe_id']);
+                        $transaction['transfert_externe'] = true;
+                        $transaction['operateur_externe'] = $operateurExterne ? $operateurExterne['nom'] : 'Inconnu';
+                    } else {
+                        $transaction['transfert_externe'] = false;
+                        $transaction['operateur_externe'] = null;
+                    }
+                }
             } else {
                 $transaction['destinataire'] = null;
+                $transaction['transfert_externe'] = false;
+                $transaction['operateur_externe'] = null;
             }
         }
         
-        return view('client/historique', ['transactions' => $transactions]);
+        // Récupérer le compte actuel pour afficher le crédit de frais
+        $compteActuel = $compteModel->find($clientId);
+        
+        return view('client/historique', [
+            'transactions' => $transactions,
+            'credit_frais_retrait' => $compteActuel['credit_frais_retrait']
+        ]);
     }
 }

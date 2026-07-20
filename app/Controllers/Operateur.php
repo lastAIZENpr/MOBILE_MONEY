@@ -243,6 +243,56 @@ class Operateur extends BaseController
         return view('operateur/situation', $data);
     }
 
+    // Situation des gains
+    public function gains()
+    {
+        $transactionModel = new TransactionModel();
+        $typeOperationModel = new TypeOperationModel();
+        $compteModel = new CompteClientModel();
+        $prefixModel = new PrefixModel();
+        $operateurExterneModel = new OperateurExterneModel();
+        
+        $transactions = $transactionModel->where('type_operation_id', 3)->findAll(); // Transferts
+        
+        $gainsNotreOperateur = 0;
+        $gainsAutresOperateurs = [];
+        
+        foreach ($transactions as $transaction) {
+            if ($transaction['compte_destination_id']) {
+                $compteDestinataire = $compteModel->find($transaction['compte_destination_id']);
+                if ($compteDestinataire) {
+                    $prefixeDestinataire = substr($compteDestinataire['numero_telephone'], 0, 3);
+                    $prefix = $prefixModel->where('prefixe', $prefixeDestinataire)->first();
+                    
+                    if ($prefix && $prefix['operateur_externe_id']) {
+                        $operateurExterne = $operateurExterneModel->find($prefix['operateur_externe_id']);
+                        if ($operateurExterne) {
+                            $nomOperateur = $operateurExterne['nom'];
+                            // Calculer la commission (frais - frais de base)
+                            $fraisBase = $transaction['frais'];
+                            // On estime que la commission est une partie des frais
+                            // Pour simplifier, on considère que tous les frais de transfert externe sont des commissions
+                            if (!isset($gainsAutresOperateurs[$nomOperateur])) {
+                                $gainsAutresOperateurs[$nomOperateur] = 0;
+                            }
+                            $gainsAutresOperateurs[$nomOperateur] += $fraisBase;
+                        }
+                    } else {
+                        // Transfert interne - gains pour notre opérateur
+                        $gainsNotreOperateur += $transaction['frais'];
+                    }
+                }
+            }
+        }
+        
+        $data = [
+            'gains_notre_operateur' => $gainsNotreOperateur,
+            'gains_autres_operateurs' => $gainsAutresOperateurs
+        ];
+        
+        return view('operateur/gains', $data);
+    }
+
     // Liste des transactions
     public function transactions()
     {
