@@ -8,6 +8,12 @@
                 <h2>Historique des Transactions</h2>
             </div>
             <div class="card-body">
+                <?php if ($credit_frais_retrait > 0): ?>
+                    <div class="alert alert-info">
+                        <strong>Crédit de frais de retrait disponible :</strong> <?= number_format($credit_frais_retrait, 0, ',', ' ') ?> Ar
+                    </div>
+                <?php endif; ?>
+                
                 <?php if (empty($transactions)): ?>
                     <div class="alert alert-info">
                         Aucune transaction effectuée.
@@ -22,6 +28,7 @@
                                 <th>Frais (Ar)</th>
                                 <th>Solde après (Ar)</th>
                                 <th>Destinataire</th>
+                                <th>Détails</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -39,6 +46,13 @@
                                 <td><?= number_format($transaction['frais'], 0, ',', ' ') ?></td>
                                 <td><?= number_format($transaction['solde_apres'], 0, ',', ' ') ?></td>
                                 <td><?= $transaction['destinataire'] ? $transaction['destinataire'] : '-' ?></td>
+                                <td>
+                                    <?php if ($transaction['transfert_externe']): ?>
+                                        <span class="badge bg-danger">Externe (<?= esc($transaction['operateur_externe']) ?>)</span>
+                                    <?php else: ?>
+                                        <span class="badge bg-success">Interne</span>
+                                    <?php endif; ?>
+                                </td>
                             </tr>
                             <?php endforeach; ?>
                         </tbody>
