@@ -20,14 +20,29 @@ class Operateur extends BaseController
     public function prefixes()
     {
         $prefixModel = new PrefixModel();
+        $operateurExterneModel = new OperateurExterneModel();
+        
         $prefixes = $prefixModel->findAll();
+        
+        // Enrichir avec le nom de l'opérateur externe
+        foreach ($prefixes as &$prefix) {
+            if ($prefix['operateur_externe_id']) {
+                $operateur = $operateurExterneModel->find($prefix['operateur_externe_id']);
+                $prefix['operateur_nom'] = $operateur ? $operateur['nom'] : 'Inconnu';
+            } else {
+                $prefix['operateur_nom'] = null;
+            }
+        }
         
         return view('operateur/prefixes', ['prefixes' => $prefixes]);
     }
 
     public function prefixCreate()
     {
-        return view('operateur/prefix_create');
+        $operateurExterneModel = new OperateurExterneModel();
+        $operateurs = $operateurExterneModel->findAll();
+        
+        return view('operateur/prefix_create', ['operateurs' => $operateurs]);
     }
 
     public function prefixStore()
@@ -35,6 +50,7 @@ class Operateur extends BaseController
         $prefixModel = new PrefixModel();
         
         $prefixe = $this->request->getPost('prefixe');
+        $operateurExterneId = $this->request->getPost('operateur_externe_id');
         
         // Validation : format 2-3 chiffres
         if (!preg_match('/^\d{2,3}$/', $prefixe)) {
@@ -47,9 +63,13 @@ class Operateur extends BaseController
             return redirect()->back()->with('error', 'Ce préfixe existe déjà');
         }
         
+        // Si opérateur_externe_id est vide, le mettre à NULL (notre opérateur)
+        $operateurExterneId = !empty($operateurExterneId) ? $operateurExterneId : null;
+        
         $prefixModel->insert([
             'prefixe' => $prefixe,
-            'actif' => 1
+            'actif' => 1,
+            'operateur_externe_id' => $operateurExterneId
         ]);
         
         return redirect()->to('/operateur/prefixes')->with('success', 'Préfixe ajouté avec succès');
