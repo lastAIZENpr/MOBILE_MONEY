@@ -24,7 +24,9 @@ class Client extends BaseController
 
         $data = [
             'numero' => $compte['numero_telephone'],
-            'solde' => $compte['solde']
+            'solde' => $compte['solde'],
+            'solde_epargne' => $compte['solde_epargne'],
+            'pourcentage_epargne' => $compte['pourcentage_epargne']
         ];
 
         return view('client/dashboard', $data);
@@ -37,7 +39,26 @@ class Client extends BaseController
         }
         return view('client/depot');
     }
+    public function epargne()
+    {
+        if (!session()->get('client_id')) {
+            return redirect()->to('/login');
+        }
+        $compteModel = new CompteClientModel();
+        $compte = $compteModel->find(session()->get('client_id'));
+        return view('client/epargne', ['pourcentage_epargne' => $compte['pourcentage_epargne']]);
+    }
 
+    public function epargneStore()
+    {
+        $pourcentage = $this->request->getPost('pourcentage_epargne');
+        if ($pourcentage < 0 || $pourcentage > 100) {
+            return redirect()->back()->with('error', 'Le pourcentage doit être compris entre 0 et 100');
+        }
+        $compteModel = new CompteClientModel();
+        $compteModel->update(session()->get('client_id'), ['pourcentage_epargne' => $pourcentage]);
+        return redirect()->to('/client')->with('success', 'Pourcentage d\'épargne mis à jour : ' . $pourcentage . '%');
+    }
     public function depotStore()
     {
         $montant = $this->request->getPost('montant');
@@ -58,11 +79,12 @@ class Client extends BaseController
         $typeDepot = $typeOperationModel->where('code', 'depot')->first();
         
         // Calculer le nouveau solde (dépôt = pas de frais)
-        $nouveauSolde = $compte['solde'] + $montant;
-        $frais = 0;
+        $montantEpargne = round($montant * $compte['pourcentage_epargne'] / 100);
+        $nouveauSolde = $compte['solde'] + $montant - $montantEpargne;
+        $nouveauSoldeEpargne = $compte['solde_epargne'] + $montantEpargne;
         
-        // Mettre à jour le solde du compte
-        $compteModel->update($clientId, ['solde' => $nouveauSolde]);
+        // Mettre à jour les soldes du compte
+        $compteModel->update($clientId, ['solde' => $nouveauSolde, 'solde_epargne' => $nouveauSoldeEpargne]);
         
         // Créer la transaction
         $transactionModel->insert([

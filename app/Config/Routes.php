@@ -10,6 +10,8 @@ $routes->get('/logout', 'Login::logout');
 $routes->get('/client', 'Client::index');
 $routes->get('/client/depot', 'Client::depot');
 $routes->post('/client/depot/store', 'Client::depotStore');
+$routes->get('/client/epargne', 'Client::epargne');
+$routes->post('/client/epargne/store', 'Client::epargneStore');
 $routes->get('/client/retrait', 'Client::retrait');
 $routes->post('/client/retrait/store', 'Client::retraitStore');
 $routes->get('/client/transfert', 'Client::transfert');

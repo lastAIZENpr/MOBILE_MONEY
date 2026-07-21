@@ -13,6 +13,7 @@
                     <h4>Solde actuel</h4>
                     <h2><?= number_format($solde, 0, ',', ' ') ?> Ar</h2>
                     <p class="mb-0">Numéro : <?= $numero ?></p>
+                    <p class="mb-0">Épargne : <?= number_format($solde_epargne, 0, ',', ' ') ?> Ar (<?= $pourcentage_epargne ?>%) - <a href="<?= base_url('client/epargne') ?>">Modifier</a></p>
                 </div>
                 <div class="row">
                     <div class="col-md-3">

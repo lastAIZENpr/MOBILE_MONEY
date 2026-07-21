@@ -11,6 +11,7 @@ class CompteClientModel extends Model
     protected $useAutoIncrement = true;
     protected $returnType = 'array';
     protected $useSoftDeletes = false;
-    protected $allowedFields = ['numero_telephone', 'solde', 'date_creation'];
+    protected $allowedFields = ['numero_telephone', 'solde', 'date_creation','pourcentage_epargne','solde_epargne'];
     protected $useTimestamps = false;
+    
 }
