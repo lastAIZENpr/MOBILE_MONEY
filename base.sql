@@ -57,6 +57,11 @@ CREATE TABLE IF NOT EXISTS transactions (
     FOREIGN KEY (type_operation_id) REFERENCES types_operation(id),
     FOREIGN KEY (compte_destination_id) REFERENCES comptes_clients(id)
 );
+CREATE TABLE IF NOT EXISTS promotion (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    pourcentage REAL NOT NULL DEFAULT 0,
+    actif INTEGER NOT NULL DEFAULT 0
+);
 
 -- Données de seed
 
@@ -121,3 +126,5 @@ INSERT INTO baremes_frais (type_operation_id, montant_min, montant_max, frais) V
 -- 1 000 001 – 2 000 000 : 3 000
 INSERT INTO baremes_frais (type_operation_id, montant_min, montant_max, frais) VALUES (2, 1000001, 2000000, 3000);
 INSERT INTO baremes_frais (type_operation_id, montant_min, montant_max, frais) VALUES (3, 1000001, 2000000, 3000);
+
+INSERT INTO promotion (id, pourcentage, actif) VALUES (1, 20, 1);

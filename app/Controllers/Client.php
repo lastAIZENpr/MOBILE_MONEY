@@ -8,6 +8,7 @@ use App\Models\TransactionModel;
 use App\Models\BaremeFraisModel;
 use App\Models\PrefixModel;
 use App\Models\OperateurExterneModel;
+use App\Models\PromotionModel;
 
 class Client extends BaseController
 {
@@ -237,6 +238,19 @@ class Client extends BaseController
             if ($operateurExterne) {
                 // Calculer la commission (montant * taux/100)
                 $commission = round($montant * $operateurExterne['taux_commission'] / 100);
+            }
+        }
+        
+        // Vérifier si promotion applicable (même opérateur)
+        $prefixExpediteur = $prefixModel->where('prefixe', substr($compteExpediteur['numero_telephone'], 0, 3))->first();
+        $operateurExpediteurId = $prefixExpediteur ? $prefixExpediteur['operateur_externe_id'] : null;
+        $operateurDestinataireId = $prefix ? $prefix['operateur_externe_id'] : null;
+        
+        if ($operateurExpediteurId == $operateurDestinataireId) {
+            $promotionModel = new PromotionModel();
+            $promotion = $promotionModel->find(1);
+            if ($promotion && $promotion['actif']) {
+                $fraisTransfert -= round($fraisTransfert * $promotion['pourcentage'] / 100);
             }
         }
         
